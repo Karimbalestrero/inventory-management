@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'firebase_options.dart';
 
 import 'screens/stammdaten_2d_screen.dart';
 import 'screens/todo_list_screen.dart';
@@ -10,7 +14,11 @@ import 'screens/kvp_screen.dart';
 import 'screens/safety_screen.dart';
 import 'screens/history_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const InventoryManagementApp());
 }
 
@@ -32,20 +40,50 @@ class InventoryManagementApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final TextEditingController chatController = TextEditingController();
+
+  final List<_ChatMessage> messages = [
+    _ChatMessage(
+      author: 'System',
+      text: 'Willkommen im Team-Chat.',
+      isSystem: true,
+    ),
+  ];
+
+  void _sendChatMessage() {
+    final text = chatController.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      messages.add(
+        _ChatMessage(
+          author: 'Karim',
+          text: text,
+        ),
+      );
+      chatController.clear();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final categories = [
-      _CategoryItem('Stammdaten 2D', Icons.qr_code_scanner, const Color(0xFF00C853)),
-      _CategoryItem('To-Do-List', Icons.check_circle_outline, const Color(0xFF00BFA5)),
-      _CategoryItem('History', Icons.history, const Color(0xFF1E88E5)),
-      _CategoryItem('Inventurcheckliste', Icons.fact_check, const Color(0xFF43A047)),
-      _CategoryItem('5S', Icons.cleaning_services, const Color(0xFF8E24AA)),
-      _CategoryItem('MA-Planung', Icons.calendar_month, const Color(0xFFFDD835)),
-      _CategoryItem('KVP', Icons.lightbulb_outline, const Color(0xFFFF7043)),
-      _CategoryItem('Safety', Icons.security, const Color(0xFFE53935)),
+      _CategoryItem('Stammdaten 2D', Icons.qr_code_scanner, Colors.white),
+      _CategoryItem('To-Do-List', Icons.check_circle_outline, Colors.white),
+      _CategoryItem('History', Icons.history, Colors.white),
+      _CategoryItem('Inventurcheckliste', Icons.fact_check, Colors.white),
+      _CategoryItem('5S', Icons.cleaning_services, Colors.white),
+      _CategoryItem('MA-Planung', Icons.calendar_month, Colors.white),
+      _CategoryItem('KVP', Icons.lightbulb_outline, Colors.white),
+      _CategoryItem('Safety', Icons.security, Colors.white),
     ];
 
     return Scaffold(
@@ -89,13 +127,6 @@ class HomeScreen extends StatelessWidget {
                           gradient: const LinearGradient(
                             colors: [Color(0xFF00E676), Color(0xFF00C853)],
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF00E676).withOpacity(0.25),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
                         ),
                         child: const Icon(
                           Icons.inventory_2_rounded,
@@ -134,54 +165,84 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              // News
+              // News from Firestore
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFF00BFA5).withOpacity(0.22),
-                    ),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                  stream: FirebaseFirestore.instance
+                      .collection('app_config')
+                      .doc('news')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    String title = 'News';
+                    String text = 'Tickets nach Bearbeitung direkt erledigen.';
+                    String subtext ='QR-Scan für Artikel, Von- und Nach-Lagerplatz nutzen.';
+
+                    if (snapshot.hasData && snapshot.data!.exists) {
+                      final data = snapshot.data!.data();
+                      if (data != null) {
+                        title = (data['title'] ?? title).toString();
+                        text = (data['text'] ?? text).toString();
+                        subtext = (data['subtext'] ?? subtext).toString();
+                      }
+                    }
+
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFF00BFA5).withOpacity(0.22),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.campaign_outlined, color: Color(0xFF00E676), size: 16),
-                          SizedBox(width: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.campaign_outlined,
+                                  color: Colors.white, size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
                           Text(
-                            'News',
-                            style: TextStyle(
+                            text,
+                            style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 11.5,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            subtext,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              height: 1.15,
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 6),
-                      Text(
-                        'Tickets nach Bearbeitung direkt erledigen.',
-                        style: TextStyle(color: Colors.white, fontSize: 11.5, height: 1.15),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        'QR-Scan für Artikel, Von- und Nach-Lagerplatz nutzen.',
-                        style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.15),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
 
               const SizedBox(height: 8),
 
-              // Categories
+              // Kategorien
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -189,9 +250,9 @@ class HomeScreen extends StatelessWidget {
                     itemCount: categories.length,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 4,
-                      crossAxisSpacing: 6,
-                      mainAxisSpacing: 6,
-                      childAspectRatio: 1.02,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: 1.1,
                     ),
                     itemBuilder: (context, index) {
                       final item = categories[index];
@@ -264,7 +325,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
 
-              // Dashboard
+              // Team-Chat
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                 child: Container(
@@ -281,7 +342,7 @@ class HomeScreen extends StatelessWidget {
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'Dashboard',
+                          'Team-Chat',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -291,53 +352,77 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
 
-                      // KPI cards
-                      GridView.count(
-                        crossAxisCount: 2,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 6,
-                        crossAxisSpacing: 6,
-                        childAspectRatio: 2.8,
-                        children: const [
-                          _DashboardKpiCard(
-                            title: 'Offene Tickets',
-                            value: '12',
-                            icon: Icons.pending_actions,
-                            color: Color(0xFFFFB300),
-                          ),
-                          _DashboardKpiCard(
-                            title: 'Erledigt',
-                            value: '24',
-                            icon: Icons.check_circle,
-                            color: Color(0xFF00E676),
-                          ),
-                          _DashboardKpiCard(
-                            title: 'Überfällig',
-                            value: '3',
-                            icon: Icons.warning_amber_rounded,
-                            color: Color(0xFFE53935),
-                          ),
-                          _DashboardKpiCard(
-                            title: 'Safety offen',
-                            value: '2',
-                            icon: Icons.security,
-                            color: Color(0xFFE53935),
-                          ),
-                        ],
+                      SizedBox(
+                        height: 90,
+                        child: ListView.builder(
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            final msg = messages[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Align(
+                                alignment: msg.isSystem
+                                    ? Alignment.centerLeft
+                                    : Alignment.centerRight,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: msg.isSystem
+                                        ? Colors.white.withOpacity(0.10)
+                                        : const Color(0xFF00C853).withOpacity(0.22),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    msg.isSystem ? msg.text : '${msg.author}: ${msg.text}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
 
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
 
-                      SizedBox(
-                        height: 120,
-                        child: Row(
-                          children: const [
-                            Expanded(child: _DashboardBarChartCard()),
-                            SizedBox(width: 8),
-                            Expanded(child: _DashboardPieChartCard()),
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: chatController,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: 'Nachricht eingeben...',
+                                hintStyle: const TextStyle(color: Colors.white54),
+                                filled: true,
+                                fillColor: Colors.white.withOpacity(0.08),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: _sendChatMessage,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00E676),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 14,
+                              ),
+                            ),
+                            child: const Icon(Icons.send, size: 18),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -357,6 +442,18 @@ class _CategoryItem {
   final Color color;
 
   _CategoryItem(this.title, this.icon, this.color);
+}
+
+class _ChatMessage {
+  final String author;
+  final String text;
+  final bool isSystem;
+
+  _ChatMessage({
+    required this.author,
+    required this.text,
+    this.isSystem = false,
+  });
 }
 
 class CategoryTile extends StatelessWidget {
@@ -383,34 +480,27 @@ class CategoryTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           gradient: LinearGradient(
             colors: [
-              Colors.white.withOpacity(0.11),
+              Colors.white.withOpacity(0.12),
               Colors.white.withOpacity(0.06),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: color.withOpacity(0.18)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.22),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: Colors.white.withOpacity(0.20)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(6),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(icon, color: Colors.white, size: 22),
               const SizedBox(height: 6),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 9.5,
+                  fontSize: 10,
                   height: 1.1,
                   fontWeight: FontWeight.w600,
                 ),
@@ -418,253 +508,6 @@ class CategoryTile extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _DashboardKpiCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _DashboardKpiCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.22)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 16),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 9.5,
-                    height: 1.05,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashboardBarChartCard extends StatelessWidget {
-  const _DashboardBarChartCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Balken',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 12.5,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Expanded(
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: 10,
-                minY: 0,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: 2,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.white.withOpacity(0.08),
-                    strokeWidth: 1,
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                barGroups: [
-                  _buildBarGroup(0, 6, const Color(0xFFFFB300)),
-                  _buildBarGroup(1, 8, const Color(0xFF00E676)),
-                  _buildBarGroup(2, 3, const Color(0xFFE53935)),
-                ],
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 20,
-                      interval: 5,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          value.toInt().toString(),
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 8,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 18,
-                      getTitlesWidget: (value, meta) {
-                        const labels = ['O', 'E', 'S'];
-                        if (value.toInt() < 0 || value.toInt() > 2) {
-                          return const SizedBox.shrink();
-                        }
-                        return Text(
-                          labels[value.toInt()],
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 8,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  BarChartGroupData _buildBarGroup(int x, double y, Color color) {
-    return BarChartGroupData(
-      x: x,
-      barRods: [
-        BarChartRodData(
-          toY: y,
-          width: 12,
-          borderRadius: BorderRadius.circular(5),
-          gradient: LinearGradient(
-            colors: [
-              color.withOpacity(0.95),
-              color.withOpacity(0.55),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DashboardPieChartCard extends StatelessWidget {
-  const _DashboardPieChartCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Kreis',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 12.5,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Expanded(
-            child: PieChart(
-              PieChartData(
-                sectionsSpace: 2,
-                centerSpaceRadius: 18,
-                sections: [
-                  PieChartSectionData(
-                    value: 72,
-                    color: const Color(0xFF00E676),
-                    radius: 18,
-                    title: '',
-                  ),
-                  PieChartSectionData(
-                    value: 18,
-                    color: const Color(0xFFFFB300),
-                    radius: 18,
-                    title: '',
-                  ),
-                  PieChartSectionData(
-                    value: 10,
-                    color: const Color(0xFFE53935),
-                    radius: 18,
-                    title: '',
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const Center(
-            child: Text(
-              '72% erledigt',
-              style: TextStyle(color: Colors.white70, fontSize: 10.5),
-            ),
-          ),
-        ],
       ),
     );
   }
