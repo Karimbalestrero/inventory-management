@@ -292,7 +292,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   decoration: BoxDecoration(
                                     color: msg.isSystem
                                         ? Colors.white.withOpacity(0.10)
-                                        : const Color(0xFF00C853).withOpacity(0.22),
+                                        : const Color(0xFF00C853)
+                                            .withOpacity(0.22),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
