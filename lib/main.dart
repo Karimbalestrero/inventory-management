@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -14,11 +13,13 @@ import 'screens/kvp_screen.dart';
 import 'screens/safety_screen.dart';
 import 'screens/history_screen.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   runApp(const InventoryManagementApp());
 }
 
@@ -57,6 +58,12 @@ class _HomeScreenState extends State<HomeScreen> {
       isSystem: true,
     ),
   ];
+
+  @override
+  void dispose() {
+    chatController.dispose();
+    super.dispose();
+  }
 
   void _sendChatMessage() {
     final text = chatController.text.trim();
@@ -176,7 +183,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (context, snapshot) {
                     String title = 'News';
                     String text = 'Tickets nach Bearbeitung direkt erledigen.';
-                    String subtext ='QR-Scan für Artikel, Von- und Nach-Lagerplatz nutzen.';
+                    String subtext =
+                        'QR-Scan für Artikel, Von- und Nach-Lagerplatz nutzen.';
 
                     if (snapshot.hasData && snapshot.data!.exists) {
                       final data = snapshot.data!.data();
@@ -202,8 +210,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.campaign_outlined,
-                                  color: Colors.white, size: 16),
+                              const Icon(
+                                Icons.campaign_outlined,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 title,
@@ -248,7 +259,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: GridView.builder(
                     itemCount: categories.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 4,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
@@ -351,7 +363,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-
                       SizedBox(
                         height: 90,
                         child: ListView.builder(
@@ -372,11 +383,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                   decoration: BoxDecoration(
                                     color: msg.isSystem
                                         ? Colors.white.withOpacity(0.10)
-                                        : const Color(0xFF00C853).withOpacity(0.22),
+                                        : const Color(0xFF00C853)
+                                            .withOpacity(0.22),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    msg.isSystem ? msg.text : '${msg.author}: ${msg.text}',
+                                    msg.isSystem
+                                        ? msg.text
+                                        : '${msg.author}: ${msg.text}',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 11.5,
@@ -388,9 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                         ),
                       ),
-
                       const SizedBox(height: 6),
-
                       Row(
                         children: [
                           Expanded(
@@ -399,7 +411,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: const TextStyle(color: Colors.white),
                               decoration: InputDecoration(
                                 hintText: 'Nachricht eingeben...',
-                                hintStyle: const TextStyle(color: Colors.white54),
+                                hintStyle:
+                                    const TextStyle(color: Colors.white54),
                                 filled: true,
                                 fillColor: Colors.white.withOpacity(0.08),
                                 border: OutlineInputBorder(
