@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'firebase_options.dart';
 
 import 'screens/stammdaten_2d_screen.dart';
 import 'screens/todo_list_screen.dart';
@@ -13,13 +9,7 @@ import 'screens/kvp_screen.dart';
 import 'screens/safety_screen.dart';
 import 'screens/history_screen.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
+void main() {
   runApp(const InventoryManagementApp());
 }
 
@@ -172,87 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 8),
 
-              // News from Firestore
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                  stream: FirebaseFirestore.instance
-                      .collection('app_config')
-                      .doc('news')
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    String title = 'News';
-                    String text = 'Tickets nach Bearbeitung direkt erledigen.';
-                    String subtext =
-                        'QR-Scan für Artikel, Von- und Nach-Lagerplatz nutzen.';
-
-                    if (snapshot.hasData && snapshot.data!.exists) {
-                      final data = snapshot.data!.data();
-                      if (data != null) {
-                        title = (data['title'] ?? title).toString();
-                        text = (data['text'] ?? text).toString();
-                        subtext = (data['subtext'] ?? subtext).toString();
-                      }
-                    }
-
-                    return Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFF00BFA5).withOpacity(0.22),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.campaign_outlined,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                title,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            text,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11.5,
-                              height: 1.15,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            subtext,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              height: 1.15,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
               // Kategorien
               Expanded(
                 child: Padding(
@@ -383,8 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   decoration: BoxDecoration(
                                     color: msg.isSystem
                                         ? Colors.white.withOpacity(0.10)
-                                        : const Color(0xFF00C853)
-                                            .withOpacity(0.22),
+                                        : const Color(0xFF00C853).withOpacity(0.22),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -411,8 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: const TextStyle(color: Colors.white),
                               decoration: InputDecoration(
                                 hintText: 'Nachricht eingeben...',
-                                hintStyle:
-                                    const TextStyle(color: Colors.white54),
+                                hintStyle: const TextStyle(color: Colors.white54),
                                 filled: true,
                                 fillColor: Colors.white.withOpacity(0.08),
                                 border: OutlineInputBorder(
